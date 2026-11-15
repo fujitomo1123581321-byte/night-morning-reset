@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#14181f" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f5f5f2" media="(prefers-color-scheme: light)" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <title>Night &amp; Morning Reset — 脱ドュームスクロール</title>
+  <style>
+    :root {
+      --bg: #f4f4f0;
+      --surface: #ffffff;
+      --surface-subtle: #ecece6;
+      --border: #dcdcd3;
+      --text: #1c2026;
+      --text-muted: #5d6470;
+      --primary: #2d5a4c;
+      --primary-fg: #ffffff;
+      --primary-soft: rgba(45, 90, 76, 0.11);
+      --success: #2b7a52;
+      --success-soft: rgba(43, 122, 82, 0.12);
+      --warning: #a16207;
+      --warning-soft: rgba(161, 98, 7, 0.12);
+      --danger: #b43c3c;
+      --danger-soft: rgba(180, 60, 60, 0.1);
+      --radius: 14px;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111419;
+        --surface: #181c23;
+        --surface-subtle: #20252e;
+        --border: #2b323d;
+        --text: #e7eaef;
+        --text-muted: #98a2b3;
+        --primary: #5aa389;
+        --primary-fg: #0d1512;
+        --primary-soft: rgba(90, 163, 137, 0.15);
+        --success: #5cb885;
+        --success-soft: rgba(92, 184, 133, 0.15);
+        --warning: #eab308;
+        --warning-soft: rgba(234, 179, 8, 0.14);
+        --danger: #e06c6c;
+        --danger-soft: rgba(224, 108, 108, 0.14);
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+
+    .app-shell {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 16px 14px 48px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .phase-pills {
+      display: flex;
+      gap: 4px;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+    }
+
+    .phase-pill {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .phase-pill.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: var(--primary);
+      font-weight: 600;
+    }
+
+    .banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .banner-main {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .banner-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-size: 17px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      background: var(--surface-subtle);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 4px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel.active {
+      display: flex;
+    }
+
+    /* Cards & Controls */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--surface-subtle);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .badge.success {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .badge.warning {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .chip.selected {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: opacity 0.15s, transform 0.08s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-fg);
+      border-color: var(--primary);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #ffffff;
+      border-color: var(--success);
+    }
+
+    .btn-danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: transparent;
+    }
+
+    .btn-sm {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    /* Breathing Timer */
+    .timer-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0 6px;
+      gap: 10px;
+    }
+
+    .ring-box {
+      position: relative;
+      width: 168px;
+      height: 168px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-svg {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: var(--surface-subtle);
+      stroke-width: 8;
+    }
+
+    .ring-fg {
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.2s linear;
+    }
+
+    .ring-center {
+      text-align: center;
+      z-index: 1;
+      max-width: 126px;
+    }
+
+    .timer-num {
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .breath-cue {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .alt-box {
+      background: var(--primary-soft);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      width: 100%;
+    }
+
+    .alt-label {
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .alt-text {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    /* Lists & Inputs */
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--surface-subtle);
+      border: 1px solid transparent;
+    }
+
+    .list-item.checked {
+      opacity: 0.72;
+    }
+
+    .list-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .list-text {
+      flex: 1;
+      font-size: 13px;
+      word-break: break-word;
+    }
+
+    .list-item.checked .list-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .icon-del {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .icon-del:hover {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="time"],
+    textarea {
+      width: 100%;
+      background: var(--surface-subtle);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: 2px solid var(--primary);
+      outline-offset: -1px;
+    }
+
+    .muted {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* 7-day shift grid */
+    .stage-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stage-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--surface-subtle);
+      border: 1px solid transparent;
+      font-size: 12px;
+    }
+
+    .stage-item.current {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .day-cell {
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      border-radius: 10px;
+      padding: 7px 3px;
+      text-align: center;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 12px;
+    }
+
+    .day-cell.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary);
+    }
+
+    .day-dot-row {
+      display: flex;
+      gap: 3px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+
+    .dot.ok {
+      background: var(--success);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: var(--bg);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 50;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="header">
+      <div class="header-top">
+        <div>
+          <h1>Night &amp; Morning Reset</h1>
+          <div class="subtitle">Pixel（日常）＋ Xiaomi（YouTube・X・インスタ隔離）</div>
+        </div>
+        <div class="phase-pills" role="group" aria-label="時間帯モード">
+          <button type="button" class="phase-pill" data-phase="night">夜</button>
+          <button type="button" class="phase-pill" data-phase="morning">朝</button>
+          <button type="button" class="phase-pill" data-phase="day">日中</button>
+        </div>
+      </div>
+
+      <div class="banner">
+        <div>
+          <div class="banner-main" id="bannerTitle">今夜のXiaomi封印・Pixel充電準備</div>
+          <div class="banner-sub" id="bannerSub">22:30までにXiaomi電源オフ → 23:00就寝</div>
+        </div>
+        <span class="badge" id="todayTargetBadge">Day 1: 23:30 / 7:00</span>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">連続達成</div>
+          <div class="stat-value" id="streakValue">0日</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">今日の衝動回避</div>
+          <div class="stat-value" id="urgesValue">0回</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">今日の達成</div>
+          <div class="stat-value" id="todayStatusValue">夜ー / 朝ー</div>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="cooldown" role="tab">クールダウン</button>
+      <button type="button" class="tab-btn" data-tab="routine" role="tab">夜・朝チェック</button>
+      <button type="button" class="tab-btn" data-tab="shift" role="tab">7日間シフト</button>
+      <button type="button" class="tab-btn" data-tab="setup" role="tab">導入・データ</button>
+    </nav>
+
+    <!-- Tab 1: Cooldown -->
+    <section id="tab-cooldown" class="panel active">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">誘惑をクールダウン</h2>
+          <div class="chip-group" style="flex-wrap: nowrap; flex-shrink: 0;">
+            <button type="button" class="chip dur-chip" data-sec="10">10s</button>
+            <button type="button" class="chip dur-chip" data-sec="15">15s</button>
+            <button type="button" class="chip dur-chip" data-sec="30">30s</button>
+          </div>
+        </div>
+
+        <div class="chip-group" id="triggerChips" style="margin-bottom: 8px;">
+          <button type="button" class="chip selected" data-trigger="Xiaomiを取りに行きそう">Xiaomiを取りに行きそう</button>
+          <button type="button" class="chip" data-trigger="PixelのChromeで見そう">PixelのChromeで見そう</button>
+          <button type="button" class="chip" data-trigger="YouTube">YouTube</button>
+          <button type="button" class="chip" data-trigger="X">X</button>
+          <button type="button" class="chip" data-trigger="Instagram">Instagram</button>
+        </div>
+
+        <div class="timer-wrap">
+          <div class="ring-box">
+            <svg class="ring-svg" width="168" height="168" viewBox="0 0 168 168">
+              <circle class="ring-bg" cx="84" cy="84" r="72"></circle>
+              <circle class="ring-fg" id="ringProgress" cx="84" cy="84" r="72" stroke-dasharray="452.39" stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="ring-center">
+              <div class="timer-num" id="timerDisplay">15</div>
+              <div class="breath-cue" id="breathCue">ボタンを押して深呼吸</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; width:100%;">
+            <button type="button" class="btn btn-primary" style="flex:1;" id="startTimerBtn">クールダウン開始</button>
+            <button type="button" class="btn" id="revealAltBtn">行動を見る</button>
+          </div>
+
+          <div class="alt-box hidden" id="altBox">
+            <div class="alt-label" id="altLabel">今の代替アクション</div>
+            <div class="alt-text" id="altText"></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-success btn-sm" style="flex:1;" id="urgeDefeatedBtn">我慢できた！ (+1)</button>
+              <button type="button" class="btn btn-sm" id="rerollAltBtn">別の候補</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Impulse Note -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">朝7時以降に見るメモ（衝動の逃がし先）</h2>
+          <span class="badge" id="noteCountBadge">0件</span>
+        </div>
+        <p class="muted" style="margin:0 0 8px;">「今これ調べたい・見たい」を書き出して、7:00の身支度完了後まで頭から追い出します。</p>
+        <div class="input-row" style="margin-top:0;">
+          <input type="text" id="impulseInput" placeholder="例：〇〇の動画、Xの最新投稿を確認する" />
+          <button type="button" class="btn btn-primary btn-sm" id="addImpulseBtn">退避</button>
+        </div>
+        <div class="list" id="impulseList" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- Custom Alternatives Editor -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">代替アクションをカスタマイズ</h2>
+          <button type="button" class="btn btn-sm" id="toggleAltEditorBtn">編集を開く</button>
+        </div>
+        <div id="altEditorBody" class="hidden">
+          <div class="chip-group" style="margin-bottom:8px;">
+            <button type="button" class="chip alt-edit-phase selected" data-aphase="night">夜用リスト</button>
+            <button type="button" class="chip alt-edit-phase" data-aphase="morning">朝用リスト</button>
+          </div>
+          <div class="list" id="altEditList"></div>
+          <div class="input-row">
+            <input type="text" id="newAltInput" placeholder="代替アクションを追加（例：白湯を飲む）" />
+            <button type="button" class="btn btn-primary btn-sm" id="addAltBtn">追加</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Routine -->
+    <section id="tab-routine" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">夜ルーティン（22:30〜23:00）</h2>
+          <span class="badge" id="nightProgressBadge">0/0</span>
+        </div>
+        <div class="list" id="nightRoutineList"></div>
+        <div class="input-row">
+          <input type="text" id="newNightInput" placeholder="夜ルーティンを追加..." />
+          <button type="button" class="btn btn-primary btn-sm" id="addNightBtn">追加</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">朝ルーティン（6:00〜7:00 準備完了まで）</h2>
+          <span class="badge" id="morningProgressBadge">0/0</span>
+        </div>
+        <div class="list" id="morningRoutineList"></div>
+        <div class="input-row">
+          <input type="text" id="newMorningInput" placeholder="朝ルーティンを追加..." />
+          <button type="button" class="btn btn-primary btn-sm" id="addMorningBtn">追加</button>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end;">
+        <button type="button" class="btn btn-sm" id="resetTodayChecksBtn">今日のチェックをリセット</button>
+      </div>
+    </section>
+
+    <!-- Tab 3: 7-Day Shift -->
+    <section id="tab-shift" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">23時寝・6時起き 段階シフト表</h2>
+          <button type="button" class="btn btn-sm" id="resetShiftStartBtn">今日をDay 1に</button>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;">
+          <label class="muted" for="shiftStartInput">開始日</label>
+          <input type="date" id="shiftStartInput" style="width:auto;" />
+        </div>
+        <div class="stage-list" id="stageList"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">7日間の達成ログ</h2>
+          <span class="muted">日付をタップして編集</span>
+        </div>
+        <div class="day-grid" id="sevenDayGrid"></div>
+        <div class="divider"></div>
+        <div id="selectedDayEditor">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <strong id="selectedDayTitle" style="font-size:13px;"></strong>
+            <span class="badge" id="selectedDayUrges">衝動回避 0回</span>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <button type="button" class="btn btn-sm" style="flex:1;" id="toggleDayNightBtn">夜クリア: 未</button>
+            <button type="button" class="btn btn-sm" style="flex:1;" id="toggleDayMorningBtn">朝クリア: 未</button>
+          </div>
+          <input type="text" id="dayNoteInput" placeholder="つまずいた点やメモ（例：Chromeで見そうになった）" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: Setup & Data -->
+    <section id="tab-setup" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">2台持ち最強ルール（設定メモ）</h2>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+          <div style="padding:10px; border-radius:10px; background:var(--surface-subtle);">
+            <strong>Xiaomi（YouTube・X・インスタ専用機）</strong>
+            <div class="muted" style="margin-top:2px;">22:30〜7:00は<strong>電源オフにして寝室の外・引き出しへ</strong>。日中も制限するならStayFreeを入れ、アプリ情報から「自動起動ON」＆「バッテリー制限なし」を設定。</div>
+          </div>
+          <div style="padding:10px; border-radius:10px; background:var(--surface-subtle);">
+            <strong>Pixel（日常メイン機）</strong>
+            <div class="muted" style="margin-top:2px;"><code>Digital Wellbeing</code> で「おやすみ時間モード（グレースケール）」を <strong>22:30〜7:00</strong> に設定。ChromeでのSNS開きを防ぐため、フォーカスモードやタイマーでChromeも制限。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Pixelのホーム画面にアプリとして入れる</h2>
+        </div>
+        <ol class="muted" style="margin:0; padding-left:18px; display:flex; flex-direction:column; gap:4px;">
+          <li>下の「Pixel用単体HTMLをダウンロード」で端末に保存（またはこのファイルをPixelへ送る）</li>
+          <li>PixelのChromeで開く（オフラインでも動きます）</li>
+          <li>Chrome右上の「⋮」＞「ホーム画面に追加」でアプリアイコン化</li>
+        </ol>
+        <div style="margin-top:10px;">
+          <button type="button" class="btn btn-primary btn-block" id="downloadPixelHtmlBtn">Pixel用単体HTMLをダウンロード</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">データバックアップ / リセット</h2>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm" id="exportJsonBtn">JSON書き出し</button>
+          <label class="btn btn-sm" for="importJsonInput" style="margin:0;">JSON読み込み</label>
+          <input type="file" id="importJsonInput" accept="application/json" class="hidden" />
+          <button type="button" class="btn btn-danger btn-sm" id="resetAllBtn">全データ初期化</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const STORAGE_KEY = "doomscroll_reset_v1";
+      const CIRCUMFERENCE = 2 * Math.PI * 72;
+
+      function getTodayKey(dateObj) {
+        const d = dateObj || new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      }
+
+      function addDays(dateStr, offset) {
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const dt = new Date(y, m - 1, d + offset);
+        return getTodayKey(dt);
+      }
+
+      function createDefaultState() {
+        const today = getTodayKey();
+        return {
+          settings: {
+            cooldownSec: 15,
+            shiftStartDate: today
+          },
+          routines: {
+            lastResetDate: today,
+            night: [
+              { id: "n1", text: "Xiaomi（YouTube・X・インスタ機）の電源を切り、寝室の外／引き出しへしまう", done: false },
+              { id: "n2", text: "Pixelのおやすみ時間モード（白黒・サイレント）ONを確認", done: false },
+              { id: "n3", text: "Pixelをベッドから2m以上離れた充電器にセット（アラーム確認）", done: false },
+              { id: "n4", text: "目標時刻までに布団に入る（耳だけ音声 or 紙の本）", done: false }
+            ],
+            morning: [
+              { id: "m1", text: "Pixelのアラームを止めに行き、そのまま布団に戻らない", done: false },
+              { id: "m2", text: "カーテンを開けて朝日を浴びる＆水を1杯飲む", done: false },
+              { id: "m3", text: "身支度（洗顔・着替え・朝食）が終わるまでXiaomiを出さず、ChromeでもSNSを見ない", done: false },
+              { id: "m4", text: "7:00以降（身支度完了後）にXiaomiを解禁する", done: false }
+            ]
+          },
+          alternatives: {
+            night: [
+              "Xiaomiの電源を切って別室・引き出しにしまう",
+              "Pixelをベッドから2m離れた充電器に挿して布団に入る",
+              "スリープタイマー15分でラジオ／Podcastを流して目を閉じる",
+              "コップ1杯の白湯・水を飲んで首と肩をゆっくり回す",
+              "紙の本や雑誌を2ページだけ読む"
+            ],
+            morning: [
+              "立ち上がってそのまま洗面所で顔を洗う",
+              "カーテンを開けて外の光を30秒浴びる",
+              "コップ1杯の水を一気に飲む",
+              "音楽や音声ニュースを流しながら着替えを始める",
+              "今見たいことは下の「朝7時以降メモ」に書いて終わらせる"
+            ]
+          },
+          impulseNotes: [],
+          logs: {}
+        };
+      }
+
+      function loadState() {
+        const seedEl = document.getElementById("initial-seed-data");
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            return normalizeState(JSON.parse(raw));
+          }
+          if (seedEl && seedEl.textContent.trim()) {
+            return normalizeState(JSON.parse(seedEl.textContent));
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+        return createDefaultState();
+      }
+
+      function normalizeState(parsed) {
+        const def = createDefaultState();
+        const state = {
+          settings: Object.assign({}, def.settings, parsed.settings || {}),
+          routines: Object.assign({}, def.routines, parsed.routines || {}),
+          alternatives: {
+            night: Array.isArray(parsed.alternatives && parsed.alternatives.night) ? parsed.alternatives.night : def.alternatives.night,
+            morning: Array.isArray(parsed.alternatives && parsed.alternatives.morning) ? parsed.alternatives.morning : def.alternatives.morning
+          },
+          impulseNotes: Array.isArray(parsed.impulseNotes) ? parsed.impulseNotes : [],
+          logs: (parsed.logs && typeof parsed.logs === "object") ? parsed.logs : {}
+        };
+        if (!Array.isArray(state.routines.night)) state.routines.night = def.routines.night;
+        if (!Array.isArray(state.routines.morning)) state.routines.morning = def.routines.morning;
+
+        const today = getTodayKey();
+        if (state.routines.lastResetDate !== today) {
+          state.routines.night.forEach((item) => { item.done = false; });
+          state.routines.morning.forEach((item) => { item.done = false; });
+          state.routines.lastResetDate = today;
+        }
+        return state;
+      }
+
+      let state = loadState();
+      let activeTab = "cooldown";
+      let manualPhase = null;
+      let selectedTrigger = "Xiaomiを取りに行きそう";
+      let altEditPhase = "night";
+      let selectedDayKey = getTodayKey();
+
+      // Timer state
+      let timerInterval = null;
+      let timerRemaining = state.settings.cooldownSec;
+      let timerRunning = false;
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+          // ignore storage quota errors
+        }
+      }
+
+      function getLog(dayKey) {
+        if (!state.logs[dayKey]) {
+          state.logs[dayKey] = { nightDone: false, morningDone: false, urgesDefeated: 0, note: "" };
+        }
+        return state.logs[dayKey];
+      }
+
+      function detectPhase() {
+        if (manualPhase) return manualPhase;
+        const h = new Date().getHours();
+        const m = new Date().getMinutes();
+        const hm = h * 60 + m;
+        if (hm >= 22 * 60 + 30 || hm < 3 * 60) return "night";
+        if (hm >= 5 * 60 && hm < 7 * 60 + 30) return "morning";
+        return "day";
+      }
+
+      function getShiftDayNumber(dayKey) {
+        const start = state.settings.shiftStartDate || getTodayKey();
+        const [sy, sm, sd] = start.split("-").map(Number);
+        const [cy, cm, cd] = dayKey.split("-").map(Number);
+        const diff = Math.round((new Date(cy, cm - 1, cd) - new Date(sy, sm - 1, sd)) / 86400000);
+        return diff + 1;
+      }
+
+      function getStageForDay(dayNum) {
+        if (dayNum <= 2) return { label: "23:30 / 7:00", stage: 0 };
+        if (dayNum <= 4) return { label: "23:15 / 6:30", stage: 1 };
+        return { label: "23:00 / 6:00", stage: 2 };
+      }
+
+      function computeStreak() {
+        const today = getTodayKey();
+        let streak = 0;
+        let cursor = today;
+        const todayLog = state.logs[today];
+        if (!todayLog || (!todayLog.nightDone && !todayLog.morningDone)) {
+          cursor = addDays(today, -1);
+        }
+        for (let i = 0; i < 365; i++) {
+          const log = state.logs[cursor];
+          if (log && (log.nightDone || log.morningDone)) {
+            streak++;
+            cursor = addDays(cursor, -1);
+          } else {
+            break;
+          }
+        }
+        return streak;
+      }
+
+      function showToast(msg) {
+        const el = document.getElementById("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        setTimeout(() => el.classList.remove("show"), 2200);
+      }
+
+      function renderHeader() {
+        const phase = detectPhase();
+        document.querySelectorAll(".phase-pill").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.phase === phase);
+        });
+
+        const bannerTitle = document.getElementById("bannerTitle");
+        const bannerSub = document.getElementById("bannerSub");
+        if (phase === "night") {
+          bannerTitle.textContent = "夜ロック帯：Xiaomi電源オフ・Pixelを遠くへ";
+          bannerSub.textContent = "YouTube・X・インスタはすべてXiaomiごと寝室の外へ隔離";
+        } else if (phase === "morning") {
+          bannerTitle.textContent = "朝準備帯：身支度が終わるまでXiaomiを出さない";
+          bannerSub.textContent = "アラームを止めて光を浴びる → 洗顔・着替え完了後に解禁";
+        } else {
+          bannerTitle.textContent = "日中モード：今夜の22:30封印に備える";
+          bannerSub.textContent = "今日のシフト目標や衝動メモを整理できます";
+        }
+
+        const today = getTodayKey();
+        const dayNum = Math.max(1, getShiftDayNumber(today));
+        const stageInfo = getStageForDay(dayNum);
+        document.getElementById("todayTargetBadge").textContent = `Day ${dayNum}: ${stageInfo.label}`;
+
+        const todayLog = getLog(today);
+        document.getElementById("streakValue").textContent = `${computeStreak()}日`;
+        document.getElementById("urgesValue").textContent = `${todayLog.urgesDefeated || 0}回`;
+        document.getElementById("todayStatusValue").textContent =
+          `夜${todayLog.nightDone ? "○" : "ー"} / 朝${todayLog.morningDone ? "○" : "ー"}`;
+      }
+
+      function updateTimerVisual() {
+        const total = state.settings.cooldownSec;
+        document.getElementById("timerDisplay").textContent = String(timerRemaining);
+        const ratio = Math.max(0, Math.min(1, (total - timerRemaining) / total));
+        const offset = CIRCUMFERENCE * (1 - ratio);
+        document.getElementById("ringProgress").style.strokeDashoffset = String(offset);
+
+        const cue = document.getElementById("breathCue");
+        if (!timerRunning && timerRemaining === total) {
+          cue.textContent = "ボタンを押して深呼吸";
+        } else if (!timerRunning && timerRemaining === 0) {
+          cue.textContent = "衝動の波が過ぎました";
+        } else {
+          const elapsed = total - timerRemaining;
+          const mod = elapsed % 15;
+          if (mod < 4) cue.textContent = "ゆっくり鼻から吸う…";
+          else if (mod < 8) cue.textContent = "そのまま軽く止める…";
+          else cue.textContent = "細く長く吐き出す…";
+        }
+      }
+
+      function pickAlternative() {
+        const phase = detectPhase();
+        const pool = phase === "morning" ? state.alternatives.morning : state.alternatives.night;
+        const list = pool.length ? pool : ["コップ1杯の水を飲む"];
+        const chosen = list[Math.floor(Math.random() * list.length)];
+        document.getElementById("altLabel").textContent =
+          `${phase === "morning" ? "朝の代替アクション" : "夜の代替アクション"}（${selectedTrigger}対策）`;
+        document.getElementById("altText").textContent = chosen;
+        document.getElementById("altBox").classList.remove("hidden");
+      }
+
+      function startCooldown() {
+        if (timerRunning) {
+          clearInterval(timerInterval);
+          timerRunning = false;
+          timerRemaining = state.settings.cooldownSec;
+          document.getElementById("startTimerBtn").textContent = "クールダウン開始";
+          updateTimerVisual();
+          return;
+        }
+        timerRemaining = state.settings.cooldownSec;
+        timerRunning = true;
+        document.getElementById("startTimerBtn").textContent = "リセット";
+        document.getElementById("altBox").classList.add("hidden");
+        updateTimerVisual();
+
+        timerInterval = setInterval(() => {
+          timerRemaining = Math.max(0, timerRemaining - 1);
+          updateTimerVisual();
+          if (timerRemaining <= 0) {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            document.getElementById("startTimerBtn").textContent = "もう一度クールダウン";
+            pickAlternative();
+          }
+        }, 1000);
+      }
+
+      function renderCooldownTab() {
+        document.querySelectorAll(".dur-chip").forEach((c) => {
+          c.classList.toggle("selected", Number(c.dataset.sec) === state.settings.cooldownSec);
+        });
+        if (!timerRunning) {
+          timerRemaining = state.settings.cooldownSec;
+          updateTimerVisual();
+        }
+        renderImpulseNotes();
+        renderAltEditor();
+      }
+
+      function renderImpulseNotes() {
+        const list = document.getElementById("impulseList");
+        list.innerHTML = "";
+        const pending = state.impulseNotes.filter((n) => !n.resolved).length;
+        document.getElementById("noteCountBadge").textContent = `${pending}件未消化`;
+
+        if (!state.impulseNotes.length) {
+          const empty = document.createElement("div");
+          empty.className = "muted";
+          empty.textContent = "まだメモはありません。見たい衝動が来たらここに預けて閉じましょう。";
+          list.appendChild(empty);
+          return;
+        }
+
+        state.impulseNotes.forEach((note) => {
+          const row = document.createElement("div");
+          row.className = `list-item ${note.resolved ? "checked" : ""}`;
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = !!note.resolved;
+          cb.addEventListener("change", () => {
+            note.resolved = cb.checked;
+            saveState();
+            renderImpulseNotes();
+          });
+
+          const text = document.createElement("span");
+          text.className = "list-text";
+          text.textContent = note.text;
+
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "icon-del";
+          del.textContent = "×";
+          del.setAttribute("aria-label", "削除");
+          del.addEventListener("click", () => {
+            state.impulseNotes = state.impulseNotes.filter((x) => x.id !== note.id);
+            saveState();
+            renderImpulseNotes();
+          });
+
+          row.append(cb, text, del);
+          list.appendChild(row);
+        });
+      }
+
+      function renderAltEditor() {
+        document.querySelectorAll(".alt-edit-phase").forEach((b) => {
+          b.classList.toggle("selected", b.dataset.aphase === altEditPhase);
+        });
+        const list = document.getElementById("altEditList");
+        list.innerHTML = "";
+        const arr = state.alternatives[altEditPhase];
+        arr.forEach((item, idx) => {
+          const row = document.createElement("div");
+          row.className = "list-item";
+          const span = document.createElement("span");
+          span.className = "list-text";
+          span.textContent = item;
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "icon-del";
+          del.textContent = "×";
+          del.addEventListener("click", () => {
+            arr.splice(idx, 1);
+            saveState();
+            renderAltEditor();
+          });
+          row.append(span, del);
+          list.appendChild(row);
+        });
+      }
+
+      function updateRoutineBadge(kind, badgeId) {
+        const items = state.routines[kind];
+        const doneCount = items.filter((x) => x.done).length;
+        const badge = document.getElementById(badgeId);
+        badge.textContent = `${doneCount}/${items.length}`;
+        badge.className = `badge ${items.length > 0 && doneCount === items.length ? "success" : ""}`;
+      }
+
+      function renderRoutineSection(kind, listId, badgeId) {
+        const items = state.routines[kind];
+        const list = document.getElementById(listId);
+        list.innerHTML = "";
+
+        items.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = `list-item ${item.done ? "checked" : ""}`;
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = !!item.done;
+          cb.addEventListener("change", () => {
+            item.done = cb.checked;
+            row.classList.toggle("checked", item.done);
+            const todayLog = getLog(getTodayKey());
+            const allDone = items.length > 0 && items.every((x) => x.done);
+            if (kind === "night") todayLog.nightDone = allDone;
+            else todayLog.morningDone = allDone;
+            saveState();
+            updateRoutineBadge(kind, badgeId);
+            renderHeader();
+            renderShiftTab();
+          });
+
+          const text = document.createElement("span");
+          text.className = "list-text";
+          text.textContent = item.text;
+
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "icon-del";
+          del.textContent = "×";
+          del.addEventListener("click", () => {
+            state.routines[kind] = items.filter((x) => x.id !== item.id);
+            saveState();
+            renderRoutineTab();
+          });
+
+          row.append(cb, text, del);
+          list.appendChild(row);
+        });
+
+        updateRoutineBadge(kind, badgeId);
+      }
+
+      function renderRoutineTab() {
+        renderRoutineSection("night", "nightRoutineList", "nightProgressBadge");
+        renderRoutineSection("morning", "morningRoutineList", "morningProgressBadge");
+      }
+
+      function renderShiftTab() {
+        const start = state.settings.shiftStartDate || getTodayKey();
+        document.getElementById("shiftStartInput").value = start;
+        const today = getTodayKey();
+        const todayDayNum = Math.max(1, getShiftDayNumber(today));
+        const currentStage = getStageForDay(todayDayNum).stage;
+
+        const stages = [
+          { title: "Day 1–2（助走）", desc: "まずはXiaomi封印と7時起きを固定", time: "23:30寝 / 7:00起" },
+          { title: "Day 3–4（前倒し）", desc: "朝日を浴びて23時前の眠気を作る", time: "23:15寝 / 6:30起" },
+          { title: "Day 5–7（定着）", desc: "目標リズム完成！", time: "23:00寝 / 6:00起" }
+        ];
+        const stageList = document.getElementById("stageList");
+        stageList.innerHTML = "";
+        stages.forEach((s, idx) => {
+          const el = document.createElement("div");
+          el.className = `stage-item ${idx === currentStage ? "current" : ""}`;
+          el.innerHTML = `<div><strong>${s.title}</strong><div class="muted">${s.desc}</div></div><span class="badge">${s.time}</span>`;
+          stageList.appendChild(el);
+        });
+
+        const grid = document.getElementById("sevenDayGrid");
+        grid.innerHTML = "";
+        for (let i = 0; i < 7; i++) {
+          const dKey = addDays(start, i);
+          const log = state.logs[dKey] || { nightDone: false, morningDone: false, urgesDefeated: 0 };
+          const cell = document.createElement("button");
+          cell.type = "button";
+          cell.className = `day-cell ${dKey === selectedDayKey ? "selected" : ""}`;
+          cell.innerHTML = `
+            <span style="font-weight:700;">D${i + 1}</span>
+            <span class="muted" style="font-size:12px;">${dKey.slice(5).replace("-", "/")}</span>
+            <div class="day-dot-row">
+              <span class="dot ${log.nightDone ? "ok" : ""}" title="夜"></span>
+              <span class="dot ${log.morningDone ? "ok" : ""}" title="朝"></span>
+            </div>
+          `;
+          cell.addEventListener("click", () => {
+            selectedDayKey = dKey;
+            renderShiftTab();
+          });
+          grid.appendChild(cell);
+        }
+
+        const selLog = getLog(selectedDayKey);
+        const selDayNum = getShiftDayNumber(selectedDayKey);
+        document.getElementById("selectedDayTitle").textContent =
+          `${selectedDayKey} (Day ${selDayNum >= 1 ? selDayNum : "-"})`;
+        document.getElementById("selectedDayUrges").textContent = `衝動回避 ${selLog.urgesDefeated || 0}回`;
+
+        const nBtn = document.getElementById("toggleDayNightBtn");
+        nBtn.textContent = `夜クリア: ${selLog.nightDone ? "達成 ○" : "未"}`;
+        nBtn.className = `btn btn-sm ${selLog.nightDone ? "btn-success" : ""}`;
+
+        const mBtn = document.getElementById("toggleDayMorningBtn");
+        mBtn.textContent = `朝クリア: ${selLog.morningDone ? "達成 ○" : "未"}`;
+        mBtn.className = `btn btn-sm ${selLog.morningDone ? "btn-success" : ""}`;
+
+        document.getElementById("dayNoteInput").value = selLog.note || "";
+      }
+
+      function buildPixelStandaloneHtml() {
+        const docClone = document.documentElement.cloneNode(true);
+        const cloneAltBox = docClone.querySelector("#altBox");
+        if (cloneAltBox) cloneAltBox.classList.add("hidden");
+        const cloneToast = docClone.querySelector("#toast");
+        if (cloneToast) cloneToast.classList.remove("show");
+        let seedEl = docClone.querySelector("#initial-seed-data");
+        if (!seedEl) {
+          seedEl = docClone.ownerDocument.createElement("script");
+          seedEl.id = "initial-seed-data";
+          seedEl.type = "application/json";
+          docClone.querySelector("body").appendChild(seedEl);
+        }
+        seedEl.textContent = JSON.stringify(state);
+        return "<!DOCTYPE html>\n" + docClone.outerHTML;
+      }
+
+      function bindEnterKey(inputId, btnId) {
+        const el = document.getElementById(inputId);
+        if (!el) return;
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            document.getElementById(btnId).click();
+          }
+        });
+      }
+
+      bindEnterKey("impulseInput", "addImpulseBtn");
+      bindEnterKey("newAltInput", "addAltBtn");
+      bindEnterKey("newNightInput", "addNightBtn");
+      bindEnterKey("newMorningInput", "addMorningBtn");
+
+      // Event bindings
+      document.querySelectorAll(".tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          activeTab = btn.dataset.tab;
+          document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
+          document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === `tab-${activeTab}`));
+        });
+      });
+
+      document.querySelectorAll(".phase-pill").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          manualPhase = manualPhase === btn.dataset.phase ? null : btn.dataset.phase;
+          renderHeader();
+        });
+      });
+
+      document.querySelectorAll("#triggerChips .chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          selectedTrigger = chip.dataset.trigger;
+          document.querySelectorAll("#triggerChips .chip").forEach((c) => c.classList.toggle("selected", c === chip));
+        });
+      });
+
+      document.querySelectorAll(".dur-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          if (timerRunning) return;
+          state.settings.cooldownSec = Number(chip.dataset.sec);
+          saveState();
+          renderCooldownTab();
+        });
+      });
+
+      document.getElementById("startTimerBtn").addEventListener("click", startCooldown);
+      document.getElementById("revealAltBtn").addEventListener("click", pickAlternative);
+      document.getElementById("rerollAltBtn").addEventListener("click", pickAlternative);
+
+      document.getElementById("urgeDefeatedBtn").addEventListener("click", () => {
+        const todayLog = getLog(getTodayKey());
+        todayLog.urgesDefeated = (todayLog.urgesDefeated || 0) + 1;
+        saveState();
+        renderHeader();
+        renderShiftTab();
+        showToast("衝動を1回ブロックしました！");
+      });
+
+      document.getElementById("addImpulseBtn").addEventListener("click", () => {
+        const input = document.getElementById("impulseInput");
+        const val = input.value.trim();
+        if (!val) return;
+        state.impulseNotes.unshift({ id: String(Date.now()), text: val, resolved: false });
+        input.value = "";
+        saveState();
+        renderImpulseNotes();
+        showToast("朝7時以降メモに退避しました");
+      });
+
+      document.getElementById("toggleAltEditorBtn").addEventListener("click", () => {
+        const body = document.getElementById("altEditorBody");
+        const hidden = body.classList.toggle("hidden");
+        document.getElementById("toggleAltEditorBtn").textContent = hidden ? "編集を開く" : "閉じる";
+      });
+
+      document.querySelectorAll(".alt-edit-phase").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          altEditPhase = btn.dataset.aphase;
+          renderAltEditor();
+        });
+      });
+
+      document.getElementById("addAltBtn").addEventListener("click", () => {
+        const input = document.getElementById("newAltInput");
+        const val = input.value.trim();
+        if (!val) return;
+        state.alternatives[altEditPhase].push(val);
+        input.value = "";
+        saveState();
+        renderAltEditor();
+      });
+
+      document.getElementById("addNightBtn").addEventListener("click", () => {
+        const input = document.getElementById("newNightInput");
+        const val = input.value.trim();
+        if (!val) return;
+        state.routines.night.push({ id: `n_${Date.now()}`, text: val, done: false });
+        input.value = "";
+        saveState();
+        renderRoutineTab();
+      });
+
+      document.getElementById("addMorningBtn").addEventListener("click", () => {
+        const input = document.getElementById("newMorningInput");
+        const val = input.value.trim();
+        if (!val) return;
+        state.routines.morning.push({ id: `m_${Date.now()}`, text: val, done: false });
+        input.value = "";
+        saveState();
+        renderRoutineTab();
+      });
+
+      document.getElementById("resetTodayChecksBtn").addEventListener("click", () => {
+        state.routines.night.forEach((x) => { x.done = false; });
+        state.routines.morning.forEach((x) => { x.done = false; });
+        const todayLog = getLog(getTodayKey());
+        todayLog.nightDone = false;
+        todayLog.morningDone = false;
+        saveState();
+        renderRoutineTab();
+        renderHeader();
+        renderShiftTab();
+        showToast("今日のチェックをリセットしました");
+      });
+
+      document.getElementById("shiftStartInput").addEventListener("change", (e) => {
+        if (!e.target.value) return;
+        state.settings.shiftStartDate = e.target.value;
+        selectedDayKey = e.target.value;
+        saveState();
+        renderHeader();
+        renderShiftTab();
+      });
+
+      document.getElementById("resetShiftStartBtn").addEventListener("click", () => {
+        const today = getTodayKey();
+        state.settings.shiftStartDate = today;
+        selectedDayKey = today;
+        saveState();
+        renderHeader();
+        renderShiftTab();
+        showToast("今日をDay 1に設定しました");
+      });
+
+      document.getElementById("toggleDayNightBtn").addEventListener("click", () => {
+        const log = getLog(selectedDayKey);
+        log.nightDone = !log.nightDone;
+        saveState();
+        renderHeader();
+        renderShiftTab();
+      });
+
+      document.getElementById("toggleDayMorningBtn").addEventListener("click", () => {
+        const log = getLog(selectedDayKey);
+        log.morningDone = !log.morningDone;
+        saveState();
+        renderHeader();
+        renderShiftTab();
+      });
+
+      document.getElementById("dayNoteInput").addEventListener("input", (e) => {
+        const log = getLog(selectedDayKey);
+        log.note = e.target.value;
+        saveState();
+      });
+
+      document.getElementById("downloadPixelHtmlBtn").addEventListener("click", () => {
+        const html = buildPixelStandaloneHtml();
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "doomscroll-reset-pixel.html";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast("Pixel用HTMLをダウンロードしました");
+      });
+
+      document.getElementById("exportJsonBtn").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `doomscroll-reset-${getTodayKey()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      document.getElementById("importJsonInput").addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            state = normalizeState(JSON.parse(String(reader.result)));
+            saveState();
+            renderAll();
+            showToast("バックアップを読み込みました");
+          } catch (err) {
+            showToast("JSONの読み込みに失敗しました");
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+      });
+
+      document.getElementById("resetAllBtn").addEventListener("click", () => {
+        if (!confirm("すべての記録とカスタム設定を初期化しますか？")) return;
+        state = createDefaultState();
+        saveState();
+        renderAll();
+        showToast("初期化しました");
+      });
+
+      function renderAll() {
+        renderHeader();
+        renderCooldownTab();
+        renderRoutineTab();
+        renderShiftTab();
+      }
+
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
